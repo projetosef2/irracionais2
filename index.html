@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Acerte o Irracional!</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #f0f4ff, #dfe9f3);
+      text-align: center;
+      margin: 0;
+      padding: 30px;
+    }
+
+    h1 {
+      color: #2c3e50;
+      font-size: 2.2em;
+    }
+
+    .status {
+      font-size: 1.1em;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    .number-line {
+      position: relative;
+      width: 80%;
+      height: 6px;
+      background: #444;
+      margin: 50px auto 30px;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+
+    .number-line span {
+      position: absolute;
+      top: -25px;
+      transform: translateX(-50%);
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .marker, .correct-marker {
+      position: absolute;
+      top: -20px;
+      width: 14px;
+      height: 40px;
+      transform: translateX(-50%);
+      border-radius: 4px;
+    }
+
+    .marker {
+      background: red;
+    }
+
+    .correct-marker {
+      background: green;
+      top: 30px;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    button {
+      margin: 10px;
+      padding: 12px 25px;
+      font-size: 1em;
+      border: none;
+      border-radius: 6px;
+      background-color: #3498db;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    #feedback {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Acerte o Irracional!</h1>
+<h2>Clique na reta no lugar onde você estima que esteja o número irracional.</h2>
+
+<div class="status">
+  Fase: <span id="fase">1</span> |
+  Pontuação: <span id="score">0</span> |
+  Tentativas restantes: <span id="tries">3</span>
+</div>
+
+<p id="question">Onde está aproximadamente √2?</p>
+
+<div class="number-line" id="numberLine">
+  <span style="left: 0%;">0</span>
+  <span style="left: 25%;">1</span>
+  <span style="left: 50%;">2</span>
+  <span style="left: 75%;">3</span>
+  <span style="left: 100%;">4</span>
+</div>
+
+<div id="marker" class="marker hidden"></div>
+<div id="correctMarker" class="correct-marker hidden"></div>
+
+<p id="feedback"></p>
+
+<button onclick="nextQuestion()">Próximo Desafio</button>
+<button onclick="reiniciar()">Reiniciar</button>
+
+<!-- Sons locais -->
+<audio id="somAcerto" src="acerto.mp3"></audio>
+<audio id="somErro" src="erro.mp3"></audio>
+
+<script>
+  const questions = [
+    { text: "Onde está aproximadamente √2?", value: Math.sqrt(2) },
+    { text: "Onde está aproximadamente π?", value: Math.PI },
+    { text: "Onde está aproximadamente √3?", value: Math.sqrt(3) },
+    { text: "Onde está aproximadamente √5?", value: Math.sqrt(5) },
+    { text: "Onde está aproximadamente e?", value: Math.E },
+    { text: "Onde está aproximadamente √6?", value: Math.sqrt(6) },
+    { text: "Onde está aproximadamente √7?", value: Math.sqrt(7) },
+    { text: "Onde está aproximadamente √8?", value: Math.sqrt(8) },
+    { text: "Onde está aproximadamente √10?", value: Math.sqrt(10) },
+    { text: "Onde está aproximadamente φ (número de ouro)?", value: (1 + Math.sqrt(5)) / 2 },
+    { text: "Onde está aproximadamente √11?", value: Math.sqrt(11) },
+    { text: "Onde está aproximadamente √12?", value: Math.sqrt(12) }
+  ];
+
+  let current = 0;
+  let score = 0;
+  let tries = 3;
+
+  const numberLine = document.getElementById('numberLine');
+  const feedback = document.getElementById('feedback');
+  const marker = document.getElementById('marker');
+  const correctMarker = document.getElementById('correctMarker');
+  const questionText = document.getElementById('question');
+  const scoreDisplay = document.getElementById('score');
+  const triesDisplay = document.getElementById('tries');
+  const faseDisplay = document.getElementById('fase');
+  const somAcerto = document.getElementById('somAcerto');
+  const somErro = document.getElementById('somErro');
+
+  numberLine.addEventListener('click', function(e) {
+    if (tries <= 0) return;
+
+    const rect = numberLine.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percent = clickX / rect.width;
+    const estimatedValue = percent * 4;
+
+    const target = questions[current].value;
+    const error = Math.abs(estimatedValue - target);
+
+    marker.style.left = `${percent * 100}%`;
+    marker.classList.remove('hidden');
+
+    const correctPercent = (target / 4) * 100;
+    correctMarker.style.left = `${correctPercent}%`;
+    correctMarker.classList.remove('hidden');
+
+    if (error < 0.2) {
+      feedback.textContent = `✅ Muito bem! Estimativa: ${estimatedValue.toFixed(2)}. Correto: ${target.toFixed(2)}.`;
+      feedback.style.color = "green";
+      score += 10;
+      tries = 0;
+      somAcerto.play();
+    } else {
+      tries--;
+      feedback.textContent = `❌ Estimativa: ${estimatedValue.toFixed(2)}. Correto: ${target.toFixed(2)}.`;
+      feedback.style.color = "red";
+      somErro.play();
+      if (tries === 0) {
+        feedback.textContent += " Fim das tentativas!";
+      }
+    }
+
+    scoreDisplay.textContent = score;
+    triesDisplay.textContent = tries;
+  });
+
+  function nextQuestion() {
+    current = (current + 1) % questions.length;
+    questionText.textContent = questions[current].text;
+    feedback.textContent = '';
+    marker.classList.add('hidden');
+    correctMarker.classList.add('hidden');
+    tries = 3;
+
+    faseDisplay.textContent = current + 1;
+    triesDisplay.textContent = tries;
+  }
+
+  function reiniciar() {
+    current = 0;
+    score = 0;
+    tries = 3;
+    questionText.textContent = questions[current].text;
+    scoreDisplay.textContent = score;
+    triesDisplay.textContent = tries;
+    faseDisplay.textContent = current + 1;
+    feedback.textContent = '';
+    marker.classList.add('hidden');
+    correctMarker.classList.add('hidden');
+  }
+</script>
+
+</body>
+</html>
